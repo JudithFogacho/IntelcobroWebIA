@@ -1,57 +1,52 @@
 'use client'
 
-// @ts-nocheck
 import React, { useState, useRef } from 'react'
 
-export const DiscountWheel = ({ onResult }) => {
+interface DiscountWheelProps {
+  onResult: (result: any) => void
+}
+
+export const DiscountWheel = ({ onResult }: DiscountWheelProps) => {
   const [isSpinning, setIsSpinning] = useState(false)
   const [rotation, setRotation] = useState(0)
-  const wheelRef = useRef(null)
+  const [hasSpun, setHasSpun] = useState(false)
+  const wheelRef = useRef<HTMLDivElement>(null)
 
   const sections = [
     { id: 1, label: '5% OFF', angle: 0, color: '#D62336' },
-    { id: 2, label: '10% OFF', angle: 60, color: '#798553' },
-    { id: 3, label: '15% OFF', angle: 120, color: '#D62336' },
-    { id: 4, label: '¡Intenta de nuevo!', angle: 180, color: '#6b7280' },
+    { id: 2, label: 'Sin premio', angle: 60, color: '#798553' }, // Esta es la sección ganadora
+    { id: 3, label: '10% OFF', angle: 120, color: '#D62336' },
+    { id: 4, label: 'Sin premio', angle: 180, color: '#6b7280' },
     { id: 5, label: '20% OFF', angle: 240, color: '#798553' },
-    { id: 6, label: 'Sin premio', angle: 300, color: '#6b7280' },
+    { id: 6, label: '15% OFF', angle: 300, color: '#6b7280' },
   ]
 
   const spinWheel = async () => {
-    if (isSpinning) return
+    if (isSpinning || hasSpun) return
 
     setIsSpinning(true)
+    setHasSpun(true)
     
-    // Calcular rotación aleatoria (mínimo 3 vueltas completas)
-    const minSpins = 3
-    const maxSpins = 6
-    const spins = Math.random() * (maxSpins - minSpins) + minSpins
-    const finalAngle = Math.random() * 360
+    // Calcular rotación para que SIEMPRE caiga en 10% OFF (sección 2, ángulo 60)
+    const targetAngle = 280 // Ángulo de la sección "10% OFF"
+    const spins = 3
+    
+    // Calcular el ángulo final para que la flecha apunte al 10% OFF
+    // La flecha está en la parte superior (0 grados), necesitamos que apunte a 60 grados
+    const finalAngle = 360 - targetAngle + (Math.random() * 10 - 5) // Pequeña variación para naturalidad
     const totalRotation = rotation + (spins * 360) + finalAngle
 
     setRotation(totalRotation)
 
-    // Simular petición al backend
     try {
       setTimeout(() => {
-        // Determinar qué sección ganó basándose en el ángulo final
-        const normalizedAngle = (360 - (finalAngle % 360)) % 360
-        const sectionAngle = 60 // 360/6 secciones
-        const winningIndex = Math.floor(normalizedAngle / sectionAngle)
-        
-        // Asegurar que el índice esté dentro del rango válido
-        const safeWinningIndex = Math.max(0, Math.min(winningIndex, sections.length - 1))
-        const winningSection = sections[safeWinningIndex] || sections[0]
-
+        // Siempre devolver resultado de 10% OFF
         const result = {
           id: Date.now().toString(),
-          section: winningSection.label,
-          discount: winningSection.label.includes('%') ? 
-            parseInt(winningSection.label.match(/\d+/)?.[0] || '0') : 0,
-          isWinning: winningSection.label.includes('%'),
-          message: winningSection.label.includes('%') ? 
-            `¡Felicitaciones! Ganaste ${winningSection.label}` :
-            winningSection.label,
+          section: '10% OFF',
+          discount: 10,
+          isWinning: true,
+          message: '¡Felicitaciones! Ganaste 10% OFF',
           angle: finalAngle,
           spinDuration: 3000
         }
@@ -72,20 +67,16 @@ export const DiscountWheel = ({ onResult }) => {
       display: 'flex', 
       flexDirection: 'column', 
       alignItems: 'center', 
-      gap: '2rem',
-      padding: '2rem'
+      gap: '1.5rem',
+      padding: '1rem'
     }}>
-      <h3 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center' }}>
-        🎯 Rueda de Descuentos
-      </h3>
-      
-      <div style={{ position: 'relative', width: '300px', height: '300px' }}>
+      <div style={{ position: 'relative', width: '280px', height: '280px' }}>
         {/* Wheel Container */}
         <div
           ref={wheelRef}
           style={{
-            width: '300px',
-            height: '300px',
+            width: '280px',
+            height: '280px',
             borderRadius: '50%',
             position: 'relative',
             transform: `rotate(${rotation}deg)`,
@@ -103,22 +94,30 @@ export const DiscountWheel = ({ onResult }) => {
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
-                width: '140px',
-                height: '2px',
                 transformOrigin: '0 0',
-                transform: `rotate(${section.angle + 30}deg) translateX(40px)`,
+                transform: `rotate(${section.angle + 30}deg)`,
+                width: '140px',
+                height: '140px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                pointerEvents: 'none'
               }}
             >
               <span style={{
                 color: 'white',
                 fontWeight: 'bold',
                 fontSize: '0.8rem',
-                textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-                transform: 'rotate(-90deg)',
-                whiteSpace: 'nowrap'
+                textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                transform: 'rotate(35deg)',
+                whiteSpace: 'nowrap',
+                textAlign: 'center',
+                position: 'absolute',
+                top: '35px',
+                left: '50%',
+                transformOrigin: 'center',
+                marginLeft: '-50px',
+                width: '100px'
               }}>
                 {section.label}
               </span>
@@ -129,9 +128,9 @@ export const DiscountWheel = ({ onResult }) => {
         {/* Wheel Pointer */}
         <div style={{
           position: 'absolute',
-          top: '-10px',
+          top: '-12px',
           left: '50%',
-          transform: 'translateX(-50%)',
+          transform: 'translateX(-50%) rotate(-60deg)',
           width: '0',
           height: '0',
           borderLeft: '15px solid transparent',
@@ -147,8 +146,8 @@ export const DiscountWheel = ({ onResult }) => {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: '60px',
-          height: '60px',
+          width: '50px',
+          height: '50px',
           backgroundColor: 'var(--primary-dark)',
           borderRadius: '50%',
           border: '3px solid white',
@@ -157,7 +156,7 @@ export const DiscountWheel = ({ onResult }) => {
           justifyContent: 'center',
           color: 'white',
           fontWeight: 'bold',
-          fontSize: '1.2rem',
+          fontSize: '1rem',
           zIndex: 10
         }}>
           🎲
@@ -167,32 +166,23 @@ export const DiscountWheel = ({ onResult }) => {
       {/* Spin Button */}
       <button
         onClick={spinWheel}
-        disabled={isSpinning}
+        disabled={isSpinning || hasSpun}
         style={{
-          backgroundColor: isSpinning ? '#6b7280' : 'var(--primary-green)',
+          backgroundColor: isSpinning || hasSpun ? '#6b7280' : 'var(--primary-green)',
           color: 'white',
           border: 'none',
-          padding: '15px 30px',
+          padding: '12px 24px',
           borderRadius: '25px',
-          fontSize: '1.1rem',
+          fontSize: '1rem',
           fontWeight: 'bold',
-          cursor: isSpinning ? 'not-allowed' : 'pointer',
+          cursor: isSpinning || hasSpun ? 'not-allowed' : 'pointer',
           transition: 'all 0.3s ease',
-          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+          opacity: hasSpun ? 0.6 : 1
         }}
       >
-        {isSpinning ? 'Girando...' : '🎯 ¡GIRAR RUEDA!'}
+        {isSpinning ? 'Girando...' : hasSpun ? 'Ya giraste' : '🎯 ¡GIRAR RUEDA!'}
       </button>
-
-      <p style={{ 
-        color: 'rgba(255,255,255,0.8)', 
-        fontSize: '0.9rem', 
-        textAlign: 'center',
-        maxWidth: '300px',
-        lineHeight: '1.4'
-      }}>
-        ¡Gira la rueda y obtén descuentos exclusivos en nuestros servicios!
-      </p>
     </div>
   )
 }
